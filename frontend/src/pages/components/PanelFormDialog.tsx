@@ -54,11 +54,16 @@ export function PanelFormDialog({
             name: '',
             url: '',
             sub_url: null,
-            username: '',
-            password: '',
+            username: 'none',
+            password: 'none',
+            token: '',
             is_active: true,
         },
     })
+
+    const panelType = watch('panel_type')
+    const usernameValue = watch('username')
+    const passwordValue = watch('password')
 
     useEffect(() => {
         if (panel) {
@@ -66,11 +71,35 @@ export function PanelFormDialog({
             setValue('panel_type', panel.panel_type)
             setValue('url', panel.url)
             setValue('is_active', panel.is_active)
+            setValue('token', '')
+
+            if (panel.panel_type === '3x-ui') {
+                setValue('username', 'none')
+                setValue('password', 'none')
+            } else {
+                setValue('username', '')
+                setValue('password', '')
+            }
             // Note: URL and credentials won't be pre-filled for security
         } else {
             reset()
         }
     }, [panel, isOpen, setValue, reset])
+
+    useEffect(() => {
+        if (panelType === '3x-ui') {
+            setValue('username', 'none')
+            setValue('password', 'none')
+        } else {
+            if (usernameValue === 'none') {
+                setValue('username', '')
+            }
+            if (passwordValue === 'none') {
+                setValue('password', '')
+            }
+            setValue('token', '')
+        }
+    }, [panelType, usernameValue, passwordValue, setValue])
 
     const onSubmit = async (data: PanelFormData) => {
         setServerError(null)
@@ -204,34 +233,58 @@ export function PanelFormDialog({
                         </p>
                     </div>
 
-                    {/* Panel Username */}
-                    <div className="space-y-2">
-                        <Label htmlFor="username">Panel Username *</Label>
-                        <Input
-                            id="username"
-                            placeholder="panel_admin"
-                            disabled={isSubmitting}
-                            {...register('username')}
-                        />
-                        {errors.username && (
-                            <p className="text-sm text-destructive">{errors.username.message}</p>
-                        )}
-                    </div>
+                    {panelType === '3x-ui' ? (
+                        <>
+                            <div className="space-y-2">
+                                <Label htmlFor="token">Panel Token *</Label>
+                                <Input
+                                    id="token"
+                                    placeholder="Enter token"
+                                    disabled={isSubmitting}
+                                    {...register('token')}
+                                />
+                                {errors.token && (
+                                    <p className="text-sm text-destructive">{errors.token.message}</p>
+                                )}
+                                <p className="text-xs text-muted-foreground">
+                                    For 3x-ui panels, provide the API token
+                                </p>
+                            </div>
+                            <input type="hidden" value="none" {...register('username')} />
+                            <input type="hidden" value="none" {...register('password')} />
+                        </>
+                    ) : (
+                        <>
+                            {/* Panel Username */}
+                            <div className="space-y-2">
+                                <Label htmlFor="username">Panel Username *</Label>
+                                <Input
+                                    id="username"
+                                    placeholder="panel_admin"
+                                    disabled={isSubmitting}
+                                    {...register('username')}
+                                />
+                                {errors.username && (
+                                    <p className="text-sm text-destructive">{errors.username.message}</p>
+                                )}
+                            </div>
 
-                    {/* Panel Password */}
-                    <div className="space-y-2">
-                        <Label htmlFor="password">Panel Password *</Label>
-                        <Input
-                            id="password"
-                            type="password"
-                            placeholder={panel ? 'Leave empty to keep current' : 'Enter password'}
-                            disabled={isSubmitting}
-                            {...register('password')}
-                        />
-                        {errors.password && (
-                            <p className="text-sm text-destructive">{errors.password.message}</p>
-                        )}
-                    </div>
+                            {/* Panel Password */}
+                            <div className="space-y-2">
+                                <Label htmlFor="password">Panel Password *</Label>
+                                <Input
+                                    id="password"
+                                    type="password"
+                                    placeholder={panel ? 'Leave empty to keep current' : 'Enter password'}
+                                    disabled={isSubmitting}
+                                    {...register('password')}
+                                />
+                                {errors.password && (
+                                    <p className="text-sm text-destructive">{errors.password.message}</p>
+                                )}
+                            </div>
+                        </>
+                    )}
 
                     {/* Active Checkbox */}
                     <div className="space-y-3">

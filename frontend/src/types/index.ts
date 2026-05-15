@@ -154,10 +154,34 @@ export const panelSchema = z.object({
         .min(4, 'Password must be at least 4 characters')
         .max(100, 'Password must be less than 100 characters'),
 
+    token: z
+        .string()
+        .optional()
+        .nullable(),
+
     is_active: z
         .boolean()
         .default(true),
 })
+
+    .superRefine((val, ctx) => {
+        if (val.panel_type === '3x-ui') {
+            const token = val.token
+            if (token === undefined || token === null || String(token).trim() === '') {
+                ctx.addIssue({
+                    code: z.ZodIssueCode.custom,
+                    message: 'Token is required for 3x-ui panels',
+                    path: ['token'],
+                })
+            } else if (typeof token === 'string' && token.length > 500) {
+                ctx.addIssue({
+                    code: z.ZodIssueCode.custom,
+                    message: 'Token must be less than 500 characters',
+                    path: ['token'],
+                })
+            }
+        }
+    })
 
 export type PanelFormData = z.infer<typeof panelSchema>
 
