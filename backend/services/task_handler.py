@@ -461,19 +461,18 @@ async def update_a_user(
 
         admin_task = SanaeiAdminTaskService(admin_username=admin_username, db=db)
         all_users = await admin_task.get_all_users()
-        user_info = next(
-            (
-                user for user in all_users
-                if user.get("email") == user_input.email
-            ),
-            None
-        )
+        user_info = next((user for user in all_users if user.get("email") == user_input.email), None)
 
-        extra_traffic = (
-            user_input.total - user_info["totalGB"]
-            if user_input.total > user_info["totalGB"]
-            else 0
-        )
+        if not user_info:
+            return JSONResponse(
+                status_code=status.HTTP_404_NOT_FOUND,
+                content={
+                    "success": False,
+                    "message": "User not found",
+                },
+            )
+
+        
 
         update_user = await admin_task.update_client_in_panel(uuid, user_input)
 
@@ -486,7 +485,14 @@ async def update_a_user(
                 },
             )
 
-        admin_check.reduce_usage(extra_traffic, extra_traffic)
+        extra_traffic = (
+            user_input.total - user_info.get("totalGB", 0)
+            if user_input.total > user_info.get("totalGB", 0)
+            else 0
+        )
+        admin_check.reduce_usage(user_input.total, extra_traffic)
+        
+
         return ResponseModel(
             success=True,
             message="User updated successfully",
@@ -545,7 +551,7 @@ async def update_a_user(
                 },
             )
 
-        admin_check.reduce_usage(extra_traffic, extra_traffic)
+        admin_check.reduce_usage(user_input.total, extra_traffic)
         return ResponseModel(
             success=True,
             message="User updated successfully",
@@ -596,7 +602,7 @@ async def update_a_user(
                 },
             )
 
-        admin_check.reduce_usage(extra_traffic, extra_traffic)
+        admin_check.reduce_usage(user_input.total, extra_traffic)
         return ResponseModel(
             success=True,
             message="User updated successfully",
@@ -807,7 +813,11 @@ async def delete_a_user(admin_username: str, uuid: str, db: Session) -> bool:
                 },
             )
 
-        traffic = user_info["total"] - (user_info["up"] + user_info["down"])
+        total = user_info.get("totalGB", user_info.get("total", 0)) or 0
+        used = (user_info.get("up", 0) or 0) + (user_info.get("down", 0) or 0)
+        traffic = total - used
+        if traffic < 0:
+            traffic = 0
 
         delete_user = await admin_task.delete_client_from_panel(uuid)
 
