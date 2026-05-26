@@ -57,7 +57,7 @@ export function AdminFormDialog({
             username: '',
             password: '',
             panel: '',
-            inbound_id: null,
+            inbound_id: "",
             marzban_inbounds: null,
             flow: null,
             traffic: 0,
@@ -79,7 +79,7 @@ export function AdminFormDialog({
             setValue('username', admin.username)
             setValue('password', '') // Don't pre-fill password
             setValue('panel', admin.panel)
-            setValue('inbound_id', admin.inbound_id)
+            setValue('inbound_id', admin.inbound_id || '')
             setValue('marzban_inbounds', admin.marzban_inbounds)
             setValue('flow', (admin as any).flow ?? null)
             setValue('traffic', bytesToGB(admin.traffic))
@@ -348,10 +348,10 @@ export function AdminFormDialog({
                                 <Label htmlFor="inbound_id">Inbound ID</Label>
                                 <Input
                                     id="inbound_id"
-                                    type="number"
+                                    type="text"
                                     placeholder="Optional"
                                     disabled={isSubmitting}
-                                    {...register('inbound_id', { valueAsNumber: true })}
+                                    {...register('inbound_id')}
                                 />
                                 {errors.inbound_id && (
                                     <p className="text-sm text-destructive">

@@ -8,7 +8,7 @@ class AdminInput(BaseModel):
     password: str
     is_active: bool = True
     panel: str
-    inbound_id: Optional[int] = None
+    inbound_id: Optional[str] = None
     flow: Optional[str] = None
     marzban_inbounds: Optional[str] = None
     marzban_password: Optional[str] = None
@@ -23,7 +23,7 @@ class AdminUpdateInput(BaseModel):
     password: Optional[str] = None
     is_active: bool
     panel: str
-    inbound_id: Optional[int] = None
+    inbound_id: Optional[str] = None
     flow: Optional[str] = None
     marzban_inbounds: Optional[str] = None
     marzban_password: Optional[str] = None
@@ -38,8 +38,8 @@ class PanelInput(BaseModel):
     name: str
     url: str
     sub_url: str | None = None
-    username: str
-    password: str
+    username: Optional[str] = None
+    password: Optional[str] = None
     token: Optional[str] = None
     is_active: bool = True
 

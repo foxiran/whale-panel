@@ -15,7 +15,7 @@ class AdminOutput(BaseModel):
     username: str
     is_active: bool
     panel: str
-    inbound_id: Optional[int]
+    inbound_id: Optional[str]
     traffic: float
     update_return_traffic: bool
     delete_return_traffic: bool

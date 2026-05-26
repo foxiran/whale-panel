@@ -48,8 +48,11 @@ export const adminSchema = z.object({
         .min(1, 'Panel selection is required'),
 
     inbound_id: z
-        .number()
-        .int('Inbound ID must be an integer')
+        .string()
+        .regex(
+            /^\d+(,\d+)*$/,
+            'Inbound IDs must be like: 1,2,3'
+        )
         .optional()
         .nullable(),
 
@@ -107,7 +110,7 @@ export interface AdminOutput {
     username: string
     is_active: boolean
     panel: string
-    inbound_id: number | null
+    inbound_id: string | null
     marzban_inbounds: string | null
     marzban_password: string | null
     flow?: string | null

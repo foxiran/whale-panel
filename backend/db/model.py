@@ -11,7 +11,7 @@ class Admins(Base):
     hashed_password = Column(String, nullable=False)
     is_active = Column(Boolean, default=True)
     panel = Column(String, nullable=False)
-    inbound_id = Column(Integer, nullable=True)
+    inbound_id = Column(String, nullable=True)
     marzban_inbounds = Column(String, nullable=True)
     marzban_password = Column(String, nullable=True)
     traffic = Column(BigInteger, default=0)

@@ -22,7 +22,6 @@ class APIService:
     async def test_connection(self) -> bool:
         try:
             response = await self.client.get("/panel/api/server/status")
-
             if response.status_code != 200:
                 return False
 
@@ -36,22 +35,9 @@ class APIService:
         except Exception:
             return False
 
-    async def get_inbound(self, inbound_id: int):
-
+    async def get_clients(self):
         response = await self.client.get(
-            f"/panel/api/inbounds/get/{inbound_id}"
-        )
-
-        response.raise_for_status()
-
-        data = response.json()
-
-        return data.get("obj")
-
-    async def get_all_inbounds(self):
-
-        response = await self.client.get(
-            "/panel/api/inbounds/list"
+            "/panel/api/clients/list"
         )
 
         response.raise_for_status()
@@ -62,7 +48,7 @@ class APIService:
 
     async def get_all_online_clients(self):
         response = await self.client.post(
-            "/panel/api/inbounds/onlines"
+            "/panel/api/clients/lastOnline"
         )
 
         response.raise_for_status()
@@ -73,44 +59,35 @@ class APIService:
 
     async def add_client(
         self,
-        inbound_id: int,
+        inbound_id: list[int],
         inbound_flow: str,
-        client: ClientInput
+        client: ClientInput,
     ):
 
         payload = {
-            "id": inbound_id,
-            "settings": {
-                "clients": [
-                    {
-                        "id": client.id,
-                        "email": client.email,
-                        "enable": client.enable,
-                        "expiryTime": client.expiry_time,
-                        "totalGB": client.total,
-                        "flow": inbound_flow if inbound_flow else client.flow,
-                        "subId": client.sub_id,
-                    }
-                ]
-            }
+            "client": {
+                "id": client.id,
+                "email": client.email,
+                "enable": client.enable,
+                "expiryTime": int(client.expiry_time),
+                "totalGB": int(client.total),
+                "flow": inbound_flow if inbound_flow else client.flow,
+                "subId": client.sub_id,
+            },
+            "inboundIds": inbound_id,
         }
 
-        payload["settings"] = json.dumps(
-            payload["settings"]
-        )
-
         response = await self.client.post(
-            "/panel/api/inbounds/addClient",
+            "/panel/api/clients/add",
             json=payload,
         )
-
         response.raise_for_status()
 
         return response.json()
 
     async def get_client_by_email(self, email: str):
         response = await self.client.get(
-            f"/panel/api/inbounds/getClientTraffics/{email}"
+            f"/panel/api/clients/get/{email}"
         )
 
         response.raise_for_status()
@@ -122,36 +99,24 @@ class APIService:
     async def update_client(
         self,
         uuid: str,
-        inbound_id: int,
         inbound_flow: str,
         client: ClientUpdateInput
     ):
 
         payload = {
-            "id": inbound_id,
-            "settings": {
-                "clients": [
-                    {
-                        "id": uuid,
-                        "email": client.email,
-                        "enable": client.enable,
-                        "expiryTime": client.expiry_time,
-                        "totalGB": client.total,
-                        "flow": inbound_flow if inbound_flow else client.flow,
-                        "subId": client.sub_id,
-                    }
-                ]
-            }
+            "email": client.email,
+            "enable": client.enable,
+            "expiryTime": int(client.expiry_time),
+            "totalGB": int(client.total),
+            "flow": inbound_flow if inbound_flow else client.flow,
+            "subId": client.sub_id,
         }
 
-        payload["settings"] = json.dumps(
-            payload["settings"]
-        )
-
         response = await self.client.post(
-            f"/panel/api/inbounds/updateClient/{uuid}",
+            f"/panel/api/clients/update/{client.email}",
             json=payload,
         )
+
 
         response.raise_for_status()
 
@@ -159,12 +124,11 @@ class APIService:
 
     async def reset_client_usage(
         self,
-        inbound_id: int,
         email: str
     ):
 
         response = await self.client.post(
-            f"/panel/api/inbounds/{inbound_id}/resetClientTraffic/{email}"
+            f"/panel/api/clients/resetTraffic/{email}"
         )
 
         response.raise_for_status()
@@ -173,12 +137,11 @@ class APIService:
 
     async def delete_client(
         self,
-        inbound_id: int,
-        uuid: str
+        email: str
     ):
 
         response = await self.client.post(
-            f"/panel/api/inbounds/{inbound_id}/delClient/{uuid}"
+            f"/panel/api/clients/del/{email}"
         )
 
         response.raise_for_status()

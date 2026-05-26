@@ -31,59 +31,23 @@ class AdminTaskService:
 
     async def get_all_users(self) -> Any:
         try:
-            inbounds = await self.api_service.get_all_inbounds()
+            clients = await self.api_service.get_clients()
 
-            inbound = next(
-                (
-                    i for i in inbounds
-                    if i.get("id") == self.admin.inbound_id
-                ),
-                None
-            )
-            
-            if not inbound:
-                logger.warning(
-                    f"Inbound not found for admin "
-                    f"{self.admin_username} "
-                    f"with inbound_id {self.admin.inbound_id}"
-                )
-                return []
-
-            client_stats = inbound.get("clientStats", [])
-            settings_raw = inbound.get("settings", "{}")
-            settings = json.loads(settings_raw)
-
-            settings_clients = settings.get("clients", [])
             online_clients = (
                 await self.api_service.get_all_online_clients()
             )
 
             result = []
 
-            for stat in client_stats:
+            for client in clients:
+                email = client.get("email")
 
-                client_setting = next(
-                    (
-                        c for c in settings_clients
-                        if c.get("email") == stat.get("email")
-                    ),
-                    {}
-                )
+                last_online = online_clients.get(email, 0)
 
-                client_data = {
-                    **stat,
+                client["isOnline"] = last_online > 0
+                client["lastOnline"] = last_online
 
-                    "totalGB": client_setting.get("totalGB", 0),
-                    "flow": client_setting.get("flow", ""),
-                    "created_at": client_setting.get("created_at"),
-                    "updated_at": client_setting.get("updated_at"),
-
-                    "isOnline": (
-                        stat.get("email") in online_clients
-                    )
-                }
-
-                result.append(client_data)
+                result.append(client)
 
             return result
 
@@ -113,7 +77,7 @@ class AdminTaskService:
     ) -> bool:
         try:
             await self.api_service.add_client(
-                self.admin.inbound_id,
+                list(map(int, self.admin.inbound_id.split(","))),
                 self.admin.inbound_flow
                 if self.admin.inbound_flow
                 else None,
@@ -145,8 +109,9 @@ class AdminTaskService:
         try:
             await self.api_service.update_client(
                 uuid,
-                self.admin.inbound_id,
-                self.admin.inbound_flow,
+                self.admin.inbound_flow
+                if self.admin.inbound_flow
+                else None,
                 client_data
             )
 
@@ -167,7 +132,6 @@ class AdminTaskService:
     ) -> bool:
         try:
             await self.api_service.reset_client_usage(
-                self.admin.inbound_id,
                 email
             )
 
@@ -187,9 +151,13 @@ class AdminTaskService:
         uuid: str
     ) -> bool:
         try:
+            email = await self.get_client_email_by_uuid(uuid)
+
+            if not email:
+                return False
+            
             await self.api_service.delete_client(
-                self.admin.inbound_id,
-                uuid
+                email
             )
 
             return True
@@ -202,3 +170,23 @@ class AdminTaskService:
             )
 
             return False
+    async def get_client_email_by_uuid(
+        self,
+        uuid: str
+    ) -> str | None:
+        try:
+            clients = await self.get_all_users()
+
+            for client in clients:
+                if client.get("uuid") == uuid:
+                    return client.get("email")
+
+            return None
+
+        except Exception as e:
+            logger.error(
+                f"Failed to get client email by uuid "
+                f"{uuid}: {str(e)}"
+            )
+
+            return None

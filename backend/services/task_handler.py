@@ -78,7 +78,7 @@ async def update_a_panel(db: Session, panel_input: PanelInput) -> bool:
                 panel_input.url, panel_input.token or ''
             ).test_connection()
 
-            if connection is None or not connection.cpu:
+            if not connection:
                 logger.warning(
                     f"Panel validation failed during update: {panel_input.name} - missing required fields"
                 )
@@ -169,7 +169,10 @@ async def get_all_users_from_panel(
                     status=client.get("enable"),
                     is_online=client.get("isOnline"),
                     data_limit=client.get("totalGB"),
-                    used_data=client.get("up") + client.get("down"),
+                    used_data=(
+                        client.get("traffic", {}).get("up", 0)
+                        + client.get("traffic", {}).get("down", 0)
+                    ),
                     expiry_date=None,
                     expiry_date_unix=client.get("expiryTime"),
                     sub_id=client.get("subId"),
@@ -649,11 +652,19 @@ async def reset_a_user_usage(
                     "message": f"Insufficient traffic to reset usage for this user, your limit: {round((_admin.traffic) / (1024 ** 3), 1)} GB",
                 },
             )
-        usage_user_traffic = user_info["up"] + user_info["down"]
+        traffic = user_info.get("traffic", {})
+
+        usage_user_traffic = (
+            traffic.get("up", 0) +
+            traffic.get("down", 0)
+        )
+
+        total_gb = user_info.get("totalGB", 0)
+
         reset_usage = await admin_task.reset_client_usage(email)
 
-        if usage_user_traffic > user_info["totalGB"]:
-            usage_traffic = user_info["totalGB"]
+        if usage_user_traffic > total_gb:
+            usage_traffic = total_gb
         else:
             usage_traffic = usage_user_traffic
 
