@@ -494,6 +494,8 @@ async def update_a_user(
             else 0
         )
         admin_check.reduce_usage(user_input.total, extra_traffic)
+        increase_traffic = user_info.get("totalGB", 0) - user_input.total 
+        admin_check.increase_usage(increase_traffic if increase_traffic > 0 else 0)
         
 
         return ResponseModel(

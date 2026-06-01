@@ -1,4 +1,5 @@
 import json
+import time
 from typing import Any
 
 from sqlalchemy.orm import Session
@@ -36,16 +37,19 @@ class AdminTaskService:
             online_clients = (
                 await self.api_service.get_all_online_clients()
             )
+            now = int(time.time() * 1000)
 
             result = []
 
             for client in clients:
                 email = client.get("email")
 
-                last_online = online_clients.get(email, 0)
+                last_seen = online_clients.get(email, 0)
 
-                client["isOnline"] = last_online > 0
-                client["lastOnline"] = last_online
+                client["isOnline"] = (
+                last_seen > 0
+                and now - last_seen < 120000
+                )
 
                 result.append(client)
 
