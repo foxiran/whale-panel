@@ -69,3 +69,9 @@ class NewsInput(BaseModel):
     news: str = Field(
         max_length=250, description="News content must be 250 characters or less"
     )
+
+
+class TGBotInput(BaseModel):
+    token: str
+    admin_id: int
+    is_active: bool = True

@@ -43,6 +43,7 @@ class News(Base):
     message = Column(String, nullable=True)
     created_at = Column(DateTime, default=datetime.date)
 
+
 class SanaeiUsers(Base):
     __tablename__ = "sanaei_users"
 
@@ -50,9 +51,19 @@ class SanaeiUsers(Base):
     username = Column(String, unique=True, index=True, nullable=False)
     owner = Column(String, nullable=False)
 
+
 class GuardUsers(Base):
     __tablename__ = "guard_users"
 
     id = Column(Integer, primary_key=True, index=True)
     username = Column(String, unique=True, index=True, nullable=False)
     owner = Column(String, nullable=False)
+
+
+class TGBot(Base):
+    __tablename__ = "tgbot"
+
+    id = Column(Integer, primary_key=True, index=True)
+    token = Column(String, nullable=False)
+    admin_id = Column(Integer, nullable=False)
+    is_active = Column(Boolean, default=True)

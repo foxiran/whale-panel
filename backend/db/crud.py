@@ -1,7 +1,7 @@
 from datetime import datetime
 from sqlalchemy.orm import Session
 
-from backend.db.model import Admins, Panels, News, SanaeiUsers
+from backend.db.model import Admins, Panels, News, SanaeiUsers, TGBot
 from backend.schema._input import AdminInput, AdminUpdateInput, PanelInput
 from backend.auth.hash import hash_password
 
@@ -196,11 +196,13 @@ def get_user_from_sanaei_table(db: Session, username: str) -> SanaeiUsers | None
 def get_all_users_from_sanaei_table(db: Session) -> list[SanaeiUsers] | None:
     return db.query(SanaeiUsers).all()
 
+
 def add_user_in_guard_table(db: Session, username: str, owner: str) -> None:
     user = SanaeiUsers(username=username, owner=owner)
     db.add(user)
     db.commit()
     db.refresh(user)
+
 
 def remove_user_from_guard_table(db: Session, username: str) -> None:
     user = db.query(SanaeiUsers).filter(SanaeiUsers.username == username).first()
@@ -208,5 +210,28 @@ def remove_user_from_guard_table(db: Session, username: str) -> None:
         db.delete(user)
         db.commit()
 
-def get_user_from_guard_table(db:Session):
+
+def get_user_from_guard_table(db: Session):
     return db.query(SanaeiUsers).all()
+
+
+def get_tgbot(db: Session):
+    return db.query(TGBot).first()
+
+
+def update_tgbot_values(db: Session, request) -> bool:
+    bot = db.query(TGBot).first()
+    if bot:
+        bot.token = request.token
+        bot.admin_id = request.admin_id
+        bot.is_active = request.is_active
+        db.commit()
+        return True
+    else:
+        new_bot = TGBot(
+            token=request.token, admin_id=request.admin_id, is_active=request.is_active
+        )
+        db.add(new_bot)
+        db.commit()
+        return True
+    return False

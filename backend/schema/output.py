@@ -53,3 +53,12 @@ class ClientsOutput(BaseModel):
 
     class Config:
         from_attributes = True
+
+
+class BotOutput(BaseModel):
+    token: str
+    admin_id: int
+    is_active: bool
+
+    class Config:
+        from_attributes = True
