@@ -43,6 +43,12 @@ const navigationItems = [
         icon: Settings,
         roles: ['superadmin'],
     },
+    {
+        label: 'Bot',
+        href: '/bot',
+        icon: Users, // You may want to use a more appropriate icon here
+        roles: ['superadmin'],
+    },
 ]
 
 function ThemeToggleButton() {

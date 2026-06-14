@@ -78,6 +78,23 @@ export const dashboardAPI = {
     },
 }
 
+export const botAPI = {
+    getBotConfig: async (): Promise<{ token: string; admin_id: number; is_active: boolean }> => {
+        const response = await api.get<ResponseModel<{ token: string; admin_id: number; is_active: boolean }>>(`/superadmin/tgbot`)
+        if (!response.data.success) {
+            throw new Error(response.data.message || 'Failed to fetch bot config')
+        }
+        return response.data.data || { token: '', admin_id: 0, is_active: false }
+    },
+
+    updateBotConfig: async (config: { token: string; admin_id: number; is_active: boolean }): Promise<void> => {
+        const response = await api.post<ResponseModel<void>>(`/superadmin/tgbot`, config)
+        if (!response.data.success) {
+            throw new Error(response.data.message || 'Failed to update bot config')
+        }
+    },
+}
+
 // Admin API
 export const adminAPI = {
     getAdmins: async (): Promise<AdminOutput[]> => {
@@ -96,13 +113,18 @@ export const adminAPI = {
             traffic: gbToBytes(data.traffic),
         }
 
-        const response = await api.post<ResponseModel<AdminOutput>>(`/superadmin/admin`, submitData)
+        try {
+            const response = await api.post<ResponseModel<AdminOutput>>(`/superadmin/admin`, submitData)
 
-        if (!response.data.success) {
-            throw new Error(response.data.message || 'Failed to create admin')
+            if (!response.data.success) {
+                throw new Error(response.data.message || 'Failed to create admin')
+            }
+
+            return response.data.data!
+        } catch (error: any) {
+            const message = error?.response?.data?.message || error?.message || 'Failed to create admin'
+            throw new Error(message)
         }
-
-        return response.data.data!
     },
 
     updateAdmin: async (adminId: number, data: AdminFormData): Promise<AdminOutput> => {
@@ -111,16 +133,21 @@ export const adminAPI = {
             traffic: gbToBytes(data.traffic),
         }
 
-        const response = await api.put<ResponseModel<AdminOutput>>(
-            `/superadmin/admin/${adminId}`,
-            submitData
-        )
+        try {
+            const response = await api.put<ResponseModel<AdminOutput>>(
+                `/superadmin/admin/${adminId}`,
+                submitData
+            )
 
-        if (!response.data.success) {
-            throw new Error(response.data.message || 'Failed to update admin')
+            if (!response.data.success) {
+                throw new Error(response.data.message || 'Failed to update admin')
+            }
+
+            return response.data.data!
+        } catch (error: any) {
+            const message = error?.response?.data?.message || error?.message || 'Failed to update admin'
+            throw new Error(message)
         }
-
-        return response.data.data!
     },
 
     deleteAdmin: async (adminId: number): Promise<void> => {
