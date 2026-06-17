@@ -135,6 +135,19 @@ def update_panel_values(db: Session, panel_id: int, panel_input: PanelInput) -> 
     return False
 
 
+def change_panel_bot_status(db: Session, panel_id: int) -> bool:
+    all_panel = get_all_panels(db)
+    for panel in all_panel:
+        panel.for_bot = False
+
+    panel = db.query(Panels).filter(Panels.id == panel_id).first()
+    if panel:
+        panel.for_bot = True
+        db.commit()
+        return True
+    return False
+
+
 def remove_panel(db: Session, panel_id: int) -> bool:
     panel = db.query(Panels).filter(Panels.id == panel_id).first()
     if panel:
