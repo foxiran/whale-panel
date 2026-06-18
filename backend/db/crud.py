@@ -1,7 +1,7 @@
 from datetime import datetime
 from sqlalchemy.orm import Session
 
-from backend.db.model import Admins, Panels, News, SanaeiUsers, TGBot
+from backend.db.model import Admins, Panels, News, SanaeiUsers, TGBot, Settings
 from backend.schema._input import AdminInput, AdminUpdateInput, PanelInput
 from backend.auth.hash import hash_password
 
@@ -245,6 +245,28 @@ def update_tgbot_values(db: Session, request) -> bool:
             token=request.token, admin_id=request.admin_id, is_active=request.is_active
         )
         db.add(new_bot)
+        db.commit()
+        return True
+    return False
+
+
+def get_all_settings(db: Session):
+    return db.query(Settings).first()
+
+
+def change_setting_price(db: Session, price: int) -> bool:
+    setting = db.query(Settings).first()
+    if setting:
+        setting.price_per_gb = price
+        db.commit()
+        return True
+    return False
+
+
+def change_setting_request_price(db: Session, price: int) -> bool:
+    setting = db.query(Settings).first()
+    if setting:
+        setting.start_price = price
         db.commit()
         return True
     return False

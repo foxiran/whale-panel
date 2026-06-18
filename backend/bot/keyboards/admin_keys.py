@@ -23,6 +23,15 @@ def main_menu():
     return keyboard
 
 
+def cancel_button():
+    keyboard = InlineKeyboardMarkup(
+        inline_keyboard=[
+            [InlineKeyboardButton(text="❌ خروج", callback_data="admin:cancel")]
+        ]
+    )
+    return keyboard
+
+
 def show_panel_selection(panels):
     keyboard = InlineKeyboardMarkup(
         inline_keyboard=[

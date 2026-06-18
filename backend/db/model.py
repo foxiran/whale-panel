@@ -34,6 +34,7 @@ class Panels(Base):
     password = Column(String, nullable=False)
     token = Column(String, nullable=True)
     is_active = Column(Boolean, default=True)
+    for_bot = Column(Boolean, default=False, nullable=True)
 
 
 class News(Base):
@@ -67,3 +68,21 @@ class TGBot(Base):
     token = Column(String, nullable=False)
     admin_id = Column(Integer, nullable=False)
     is_active = Column(Boolean, default=True)
+
+
+from sqlalchemy import Column, Integer, Float, Boolean, String
+
+
+class Settings(Base):
+    __tablename__ = "settings"
+
+    id = Column(Integer, primary_key=True, index=True)
+
+    price_per_gb = Column(Integer, default=5000)
+    start_price = Column(Integer, default=100000)
+    minimum_purchase_amount = Column(Integer, default=500000)
+    registration_enabled = Column(Boolean, default=True)
+    payment_enabled = Column(Boolean, default=True)
+    card_number = Column(String(50), nullable=True)
+    card_holder = Column(String(100), nullable=True)
+    wallet_address = Column(String(200), nullable=True)
