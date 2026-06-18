@@ -1,6 +1,15 @@
 from datetime import datetime
 from .engin import Base
-from sqlalchemy import Column, DateTime, Integer, String, Boolean, BigInteger
+from sqlalchemy import (
+    Column,
+    DateTime,
+    Integer,
+    String,
+    Boolean,
+    BigInteger,
+    ForeignKey,
+)
+from sqlalchemy.orm import relationship
 
 
 class Admins(Base):
@@ -20,6 +29,8 @@ class Admins(Base):
     delete_return_traffic = Column(Boolean, default=False)
     expiry_date = Column(DateTime, nullable=True)
     inbound_flow = Column(String, nullable=True)
+
+    user = relationship("Users", back_populates="admin", uselist=False)
 
 
 class Panels(Base):
@@ -70,9 +81,6 @@ class TGBot(Base):
     is_active = Column(Boolean, default=True)
 
 
-from sqlalchemy import Column, Integer, Float, Boolean, String
-
-
 class Settings(Base):
     __tablename__ = "settings"
 
@@ -86,3 +94,20 @@ class Settings(Base):
     card_number = Column(String(50), nullable=True)
     card_holder = Column(String(100), nullable=True)
     wallet_address = Column(String(200), nullable=True)
+    start_message = Column(String, nullable=True)
+    help_message = Column(String, nullable=True)
+
+
+class Users(Base):
+    __tablename__ = "users"
+
+    id = Column(Integer, primary_key=True, index=True)
+    chat_id = Column(BigInteger, nullable=False, unique=True)
+    name = Column(String, nullable=False)
+    username = Column(String, nullable=True)
+    is_active = Column(Boolean, default=True)
+    is_registered = Column(Boolean, default=False)
+    is_reseller = Column(Boolean, default=False)
+
+    admin_id = Column(Integer, ForeignKey("admins.id"), nullable=True, unique=True)
+    admin = relationship("Admins", back_populates="user")

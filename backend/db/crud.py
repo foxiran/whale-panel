@@ -1,7 +1,7 @@
 from datetime import datetime
 from sqlalchemy.orm import Session
 
-from backend.db.model import Admins, Panels, News, SanaeiUsers, TGBot, Settings
+from backend.db.model import Admins, Panels, News, SanaeiUsers, TGBot, Settings, Users
 from backend.schema._input import AdminInput, AdminUpdateInput, PanelInput
 from backend.auth.hash import hash_password
 
@@ -267,6 +267,35 @@ def change_setting_request_price(db: Session, price: int) -> bool:
     setting = db.query(Settings).first()
     if setting:
         setting.start_price = price
+        db.commit()
+        return True
+    return False
+
+
+def get_user(db: Session, chat_id: int) -> Users | None:
+    return db.query(Users).filter(Users.chat_id == chat_id).first()
+
+
+def add_user(db: Session, name: str, chat_id: int, username: str = None) -> None:
+    user = Users(name=name, username=username, chat_id=chat_id)
+    db.add(user)
+    db.commit()
+    db.refresh(user)
+    return user
+
+
+def change_setting_start_message(db: Session, message: str) -> bool:
+    setting = db.query(Settings).filter(Settings.id == 1).first()
+    if setting:
+        setting.start_message = message
+        db.commit()
+        return True
+
+
+def change_setting_help_message(db: Session, message: str) -> bool:
+    setting = db.query(Settings).filter(Settings.id == 1).first()
+    if setting:
+        setting.help_message = message
         db.commit()
         return True
     return False
