@@ -290,6 +290,7 @@ def change_setting_start_message(db: Session, message: str) -> bool:
         setting.start_message = message
         db.commit()
         return True
+    return False
 
 
 def change_setting_help_message(db: Session, message: str) -> bool:

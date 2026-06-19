@@ -17,6 +17,29 @@ def main_menu():
             ],
             [
                 InlineKeyboardButton(text="ℹ️ آمار", callback_data="admin:info"),
+                (
+                    InlineKeyboardButton(
+                        text="⚙️ تنطیمات", callback_data="admin:settings"
+                    )
+                ),
+            ],
+        ]
+    )
+    return keyboard
+
+
+def settings_menu():
+    keyboard = InlineKeyboardMarkup(
+        inline_keyboard=[
+            [
+                InlineKeyboardButton(
+                    text="🔄 تنظیم پیام آغاز", callback_data="admin:set_start_message"
+                )
+            ],
+            [
+                InlineKeyboardButton(
+                    text="🔄 تنظیم پیام راهنما", callback_data="admin:set_help_message"
+                )
             ],
         ]
     )

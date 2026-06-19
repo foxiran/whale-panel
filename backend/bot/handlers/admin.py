@@ -8,6 +8,7 @@ from backend.bot.keyboards.admin_keys import (
     main_menu,
     show_panel_selection,
     cancel_button,
+    settings_menu,
 )
 from backend.db import crud
 from backend.db.engin import sessionLocal
@@ -19,6 +20,8 @@ r = Router()
 class AdminState(StatesGroup):
     set_price = State()
     set_request_price = State()
+    set_start_message = State()
+    set_help_message = State()
 
 
 @r.callback_query(F.data == "admin:cancel")
@@ -115,3 +118,78 @@ async def set_request_price_message(message: Message, state: FSMContext):
     except Exception as e:
         await message.answer(text=f"❌ خطا هنگام تنظیم قیمت درخواست: \n{e}")
     return
+
+
+@r.callback_query(F.data == "admin:settings")
+async def settings(callback: CallbackQuery):
+    await callback.message.answer(text="🔄 تنظیمات عمومی", reply_markup=settings_menu())
+    return
+
+
+@r.callback_query(F.data == "admin:set_start_message")
+async def set_start_message(callback: CallbackQuery, state: FSMContext):
+    db = sessionLocal()
+    current_message = crud.get_all_settings(db).start_message
+    await callback.message.answer(
+        text=f"🔄 پیام آغاز فعلی:\n{current_message}", reply_markup=cancel_button()
+    )
+    await state.set_state(AdminState.set_start_message)
+    return
+
+
+@r.message(AdminState.set_start_message)
+async def set_start_message_message(message: Message, state: FSMContext):
+    try:
+        db = sessionLocal()
+
+        text = message.text
+
+        updated = crud.change_setting_start_message(db, text)
+
+        if not updated:
+            await message.answer("❌ خطا هنگام ذخیره پیام.")
+            return
+
+        await message.answer(
+            "✅ پیام آغاز با موفقیت تنظیم شد.",
+            reply_markup=main_menu(),
+        )
+        await state.clear()
+
+    except Exception as e:
+        await message.answer(f"❌ {e}")
+
+
+@r.callback_query(F.data == "admin:set_help_message")
+async def set_help_message(callback: CallbackQuery, state: FSMContext):
+    db = sessionLocal()
+    current_message = crud.get_all_settings(db).help_message
+    await callback.message.answer(
+        text=f"🔄 پیام راهنمای فعلی:\n{current_message}", reply_markup=cancel_button()
+    )
+    await state.set_state(AdminState.set_help_message)
+    return
+
+
+@r.message(AdminState.set_help_message)
+async def set_help_message_message(message: Message, state: FSMContext):
+    try:
+        db = sessionLocal()
+
+        text = message.text
+
+        updated = crud.change_setting_help_message(db, text)
+
+        if not updated:
+            await message.answer("❌ خطا هنگام ذخیره پیام.")
+            return
+
+        await message.answer(
+            "✅ پیام راهنما با موفقیت تنظیم شد.",
+            reply_markup=main_menu(),
+        )
+
+        await state.clear()
+
+    except Exception as e:
+        await message.answer(f"❌ {e}")
