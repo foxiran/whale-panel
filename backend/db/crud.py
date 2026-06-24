@@ -1,4 +1,5 @@
 from datetime import datetime
+from sqlalchemy import true
 from sqlalchemy.orm import Session
 
 from backend.db.model import Admins, Panels, News, SanaeiUsers, TGBot, Settings, Users
@@ -10,7 +11,7 @@ def get_all_admins(db: Session):
     return db.query(Admins).all()
 
 
-def add_admin(db: Session, admin_input: AdminInput) -> None:
+def add_admin(db: Session, admin_input: AdminInput) -> Admins:
     try:
         hashed_pwd = hash_password(password=admin_input.password)
     except Exception as e:
@@ -34,6 +35,7 @@ def add_admin(db: Session, admin_input: AdminInput) -> None:
     db.add(admin)
     db.commit()
     db.refresh(admin)
+    return admin
 
 
 def get_admin_by_username(db: Session, username: str):
@@ -98,6 +100,10 @@ def increase_admin_traffic(db: Session, admin: Admins, added_traffic) -> None:
 
 def get_all_panels(db: Session):
     return db.query(Panels).all()
+
+
+def get_for_bot_panel(db: Session):
+    return db.query(Panels).filter(Panels.for_bot.is_(True)).first()
 
 
 def get_panel_by_name(db: Session, name: str) -> Panels | None:
@@ -300,3 +306,17 @@ def change_setting_help_message(db: Session, message: str) -> bool:
         db.commit()
         return True
     return False
+
+
+def get_info_for_bot(db: Session):
+    users = db.query(Users).all()
+    admins = db.query(Admins).all()
+    settings = db.query(Settings).first()
+    return users, admins, settings
+
+
+def make_user_reseller(db, user: Users, admin: Admins):
+    user.is_reseller = True
+    user.admin_id = admin.id
+
+    db.commit()
