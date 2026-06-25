@@ -10,24 +10,41 @@ def main_users_menu():
                     callback_data="user:register",
                 )
             ],
-            [InlineKeyboardButton(text="👤 حساب من", callback_data="user:my_acc")],
-        ]
-    )
-    return keyboard
-
-
-def payment_methods():
-    keyboard = InlineKeyboardMarkup(
-        inline_keyboard=[
             [
+                InlineKeyboardButton(text="👤 حساب من", callback_data="user:my_acc"),
                 InlineKeyboardButton(
-                    text="💳 کارت به کارت",
-                    callback_data="user:pay_with_card",
-                )
+                    text="🔋 خرید حجم اضافه", callback_data="user:buy_traffic"
+                ),
             ],
         ]
     )
     return keyboard
+
+
+def payment_methods_register():
+    return InlineKeyboardMarkup(
+        inline_keyboard=[
+            [
+                InlineKeyboardButton(
+                    text="💳 کارت به کارت",
+                    callback_data="user:register_pay_card",
+                )
+            ]
+        ]
+    )
+
+
+def payment_methods_buy():
+    return InlineKeyboardMarkup(
+        inline_keyboard=[
+            [
+                InlineKeyboardButton(
+                    text="💳 کارت به کارت",
+                    callback_data="user:buy_pay_card",
+                )
+            ]
+        ]
+    )
 
 
 def register_menu():
@@ -47,3 +64,12 @@ def register_menu():
             ],
         ]
     )
+
+
+def cancel_button():
+    keyboard = InlineKeyboardMarkup(
+        inline_keyboard=[
+            [InlineKeyboardButton(text="❌ لغو", callback_data="user:cancel")]
+        ]
+    )
+    return keyboard

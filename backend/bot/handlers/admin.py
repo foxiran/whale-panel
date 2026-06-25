@@ -310,3 +310,41 @@ async def reject_register(callback: CallbackQuery):
     await callback.message.edit_reply_markup()
 
     await callback.answer("درخواست رد شد.")
+
+
+@r.callback_query(F.data.startswith("admin:accept_buy:"))
+async def accept_buy(callback: CallbackQuery):
+    db = sessionLocal()
+
+    _, _, chat_id, gb = callback.data.split(":")
+
+    chat_id = int(chat_id)
+    gb = int(gb)
+
+    user = crud.get_user(db, chat_id)
+
+    admin = user.admin
+
+    admin.traffic += gb * 1024**3
+    admin.initial_traffic += gb * 1024**3
+
+    db.commit()
+
+    await callback.bot.send_message(
+        chat_id, f"🎉 خرید شما تایید شد.\n\n{gb} گیگ به موجودی شما اضافه شد."
+    )
+
+    await callback.message.edit_reply_markup()
+
+    await callback.answer("تایید شد.")
+
+
+@r.callback_query(F.data.startswith("admin:reject_buy:"))
+async def reject_buy(callback: CallbackQuery):
+    chat_id = int(callback.data.split(":")[-1])
+
+    await callback.bot.send_message(chat_id, "❌ رسید پرداخت شما رد شد.")
+
+    await callback.message.edit_reply_markup()
+
+    await callback.answer("رد شد.")

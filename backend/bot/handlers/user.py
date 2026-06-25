@@ -4,12 +4,15 @@ from aiogram.enums import parse_mode
 from aiogram.types import Message, CallbackQuery
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import State, StatesGroup
+from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
 
 from backend.bot.config.db_conf import ADMIN_ID
 from backend.bot.keyboards.user_keys import (
     main_users_menu,
     register_menu,
-    payment_methods,
+    payment_methods_register,
+    payment_methods_buy,
+    cancel_button,
 )
 from backend.db import crud
 from backend.db.engin import sessionLocal
@@ -21,7 +24,12 @@ class RegisterState(StatesGroup):
     waiting_receipt = State()
 
 
-@r.callback_query(F.data == "user:back")
+class BuyTrafficState(StatesGroup):
+    amount = State()
+    receipt = State()
+
+
+@r.callback_query(F.data == "user:cancel")
 async def back_tomain_menu(callback: CallbackQuery, state: FSMContext):
     await callback.message.delete()
     await callback.message.answer(
@@ -179,12 +187,12 @@ async def request_for_register(callback: CallbackQuery):
             "روش پرداخت را انتخاب کنید."
         ),
         parse_mode="HTML",
-        reply_markup=payment_methods(),
+        reply_markup=payment_methods_register(),
     )
 
 
-@r.callback_query(F.data == "user:pay_with_card")
-async def pay_with_card(callback: CallbackQuery, state: FSMContext):
+@r.callback_query(F.data == "user:register_pay_card")
+async def pay_register(callback: CallbackQuery, state: FSMContext):
     db = sessionLocal()
 
     settings = crud.get_all_settings(db)
@@ -231,7 +239,6 @@ async def invalid_receipt(message: Message):
 
 
 async def send_register_request(bot, user, photo=None):
-    from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
 
     text = (
         "📥 <b>درخواست جدید نمایندگی</b>\n\n"
@@ -270,3 +277,148 @@ async def send_register_request(bot, user, photo=None):
             parse_mode="HTML",
             reply_markup=keyboard,
         )
+
+
+@r.callback_query(F.data == "user:buy_traffic")
+async def buy_traffic(callback: CallbackQuery, state: FSMContext):
+    db = sessionLocal()
+
+    user = crud.get_user(db, callback.from_user.id)
+
+    if not user.is_reseller:
+        await callback.answer(
+            "فقط نمایندگان امکان خرید ترافیک دارند.",
+            show_alert=True,
+        )
+        return
+
+    await callback.message.edit_text(
+        "📦 مقدار ترافیک مورد نظر را به گیگابایت وارد کنید.\n\n"
+        "مثال: <code>50</code>",
+        parse_mode="HTML",
+    )
+
+    await state.set_state(BuyTrafficState.amount)
+
+
+@r.message(BuyTrafficState.amount)
+async def buy_amount(message: Message, state: FSMContext):
+    db = sessionLocal()
+
+    if not message.text.isdigit():
+        await message.answer("❌ فقط عدد وارد کنید.", reply_markup=cancel_button())
+        return
+
+    gb = int(message.text)
+
+    settings = crud.get_all_settings(db)
+
+    if gb <= 0:
+        await message.answer("❌ مقدار نامعتبر است.", reply_markup=cancel_button())
+        return
+
+    if gb * settings.price_per_gb < settings.minimum_purchase_amount:
+        await message.answer(
+            f"حداقل خرید {settings.minimum_purchase_amount} تومان است.",
+            reply_markup=cancel_button(),
+        )
+        return
+
+    price = gb * settings.price_per_gb
+
+    await state.update_data(
+        gb=gb,
+        price=price,
+    )
+
+    await message.answer(
+        f"""
+💳 خرید ترافیک
+
+📦 مقدار:
+<b>{gb} GB</b>
+💰 مبلغ:
+<b>{price:,} تومان</b>
+
+روش پرداخت را انتخاب کنید.
+""",
+        parse_mode="HTML",
+        reply_markup=payment_methods_buy(),
+    )
+
+
+@r.callback_query(F.data == "user:buy_pay_card")
+async def pay_card(callback: CallbackQuery, state: FSMContext):
+    db = sessionLocal()
+
+    settings = crud.get_all_settings(db)
+
+    data = await state.get_data()
+
+    await callback.message.edit_text(
+        f"""
+💳 کارت به کارت
+
+مبلغ:
+<b>{data['price']:,} تومان</b>
+
+شماره کارت
+<code>{settings.card_number}</code>
+{settings.card_holder}
+
+پس از پرداخت، تصویر رسید را ارسال کنید.
+""",
+        parse_mode="HTML",
+        reply_markup=cancel_button(),
+    )
+
+    await state.set_state(BuyTrafficState.receipt)
+
+
+@r.message(BuyTrafficState.receipt, F.photo)
+async def receipt(message: Message, state: FSMContext):
+    db = sessionLocal()
+
+    data = await state.get_data()
+
+    user = crud.get_user(db, message.from_user.id)
+
+    photo = message.photo[-1].file_id
+
+    keyboard = InlineKeyboardMarkup(
+        inline_keyboard=[
+            [
+                InlineKeyboardButton(
+                    text="✅ تایید",
+                    callback_data=f"admin:accept_buy:{user.chat_id}:{data['gb']}",
+                ),
+                InlineKeyboardButton(
+                    text="❌ رد",
+                    callback_data=f"admin:reject_buy:{user.chat_id}",
+                ),
+            ]
+        ]
+    )
+
+    caption = f"""
+🛒 خرید ترافیک
+👤 {user.name}
+🆔 <code>{user.chat_id}</code>
+📦 {data['gb']} GB
+
+💰 {data['price']:,} تومان
+"""
+
+    await message.bot.send_photo(
+        ADMIN_ID,
+        photo=photo,
+        caption=caption,
+        parse_mode="HTML",
+        reply_markup=keyboard,
+    )
+
+    await message.answer(
+        "✅ رسید ارسال شد.\nپس از تایید مدیریت، ترافیک شما افزایش خواهد یافت."
+    )
+
+    await state.clear()
