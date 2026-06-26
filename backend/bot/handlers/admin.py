@@ -1,11 +1,9 @@
-from math import e
 from aiogram import Router, F
-from aiogram.enums import parse_mode
 from aiogram.types import Message, CallbackQuery
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import State, StatesGroup
-from sqlalchemy.sql.coercions import expect
 
+from backend.bot.middlewares.admin import AdminMiddleware
 from backend.bot.config.db_conf import ADMIN_ID
 from backend.bot.keyboards.admin_keys import (
     main_menu,
@@ -15,10 +13,10 @@ from backend.bot.keyboards.admin_keys import (
 )
 from backend.db import crud
 from backend.db.engin import sessionLocal
-from backend.db.model import Panels
 
 r = Router()
-# r.message.middleware(AdminMiddleware([ADMIN_ID]))
+r.message.middleware(AdminMiddleware())
+r.callback_query.middleware(AdminMiddleware())
 
 
 class AdminState(StatesGroup):
