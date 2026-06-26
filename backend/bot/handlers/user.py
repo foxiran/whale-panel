@@ -422,3 +422,12 @@ async def receipt(message: Message, state: FSMContext):
     )
 
     await state.clear()
+
+
+@r.callback_query(F.data == "user:help")
+async def help_message(callback: CallbackQuery):
+    db = sessionLocal()
+    message = crud.get_all_settings(db).help_message
+    await callback.message.edit_text(
+        text=message, parse_mode="HTML", reply_markup=main_users_menu()
+    )

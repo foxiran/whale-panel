@@ -16,6 +16,7 @@ def main_users_menu():
                     text="🔋 خرید حجم اضافه", callback_data="user:buy_traffic"
                 ),
             ],
+            [InlineKeyboardButton(text="❕ راهنما/قوانین", callback_data="user:help")],
         ]
     )
     return keyboard
