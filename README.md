@@ -37,6 +37,7 @@ A comprehensive admin dashboard system for managing X-UI panels with role-based 
 |---------|-------------|
 | 🔐 **Role-Based Access** | SuperAdmin & Admin roles with granular permissions |
 | 📊 **Unified Dashboard** | Monitor all panels from a single interface |
+| 🤖 **Telegram Bot** | Auto-sell VPN Reseller via bot |
 | 👥 **User Management** | Create, edit, and manage users across panels |
 | 📈 **Traffic Monitoring** | Real-time traffic statistics and limits |
 | 🔄 **Auto Sync** | Automatic synchronization with X-UI panels |
