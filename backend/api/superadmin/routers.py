@@ -3,8 +3,14 @@ from fastapi.responses import JSONResponse, FileResponse
 from sqlalchemy.orm import Session
 import os
 
-from backend.schema.output import ResponseModel, AdminOutput, PanelOutput
-from backend.schema._input import AdminInput, AdminUpdateInput, PanelInput, NewsInput
+from backend.schema.output import ResponseModel, AdminOutput, PanelOutput, BotOutput
+from backend.schema._input import (
+    AdminInput,
+    AdminUpdateInput,
+    PanelInput,
+    NewsInput,
+    TGBotInput,
+)
 from backend.db import crud
 from backend.db.engin import get_db
 from backend.services import create_new_panel, update_a_panel
@@ -473,8 +479,90 @@ async def delete_news(
 
 @router.get("/system", description="Get system information")
 async def get_system_info_endpoint(
-    db: Session = Depends(get_db), current_admin: dict = Depends(get_current_superadmin)
+    db: Session = Depends(get_db), admin: dict = Depends(get_current_superadmin)
 ):
 
     system_info = get_system_info()
     return JSONResponse(content={"success": True, "data": system_info})
+
+
+@router.post(
+    "/tgbot", description="Set Telegram bot token", response_model=ResponseModel
+)
+async def set_tgbot_token(
+    request: TGBotInput,
+    db: Session = Depends(get_db),
+    admin: dict = Depends(get_current_superadmin),
+):
+    """Set or update the Telegram bot token and admin ID"""
+    try:
+        existing_bot = crud.get_tgbot(db)
+        if existing_bot:
+            update_data = crud.update_tgbot_values(db, request)
+            if not update_data:
+                logger.error("Failed to update Telegram bot token")
+                return JSONResponse(
+                    status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                    content={
+                        "success": False,
+                        "message": "Failed to update Telegram bot token",
+                    },
+                )
+            return ResponseModel(
+                success=True, message="Telegram bot token updated successfully"
+            )
+        else:
+            new_bot = crud.update_tgbot_values(db, request)
+            if not new_bot:
+                logger.error("Failed to set Telegram bot token")
+                return JSONResponse(
+                    status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                    content={
+                        "success": False,
+                        "message": "Failed to set Telegram bot token",
+                    },
+                )
+            logger.info("Telegram bot token set")
+            return ResponseModel(
+                success=True, message="Telegram bot token set successfully"
+            )
+    except Exception as e:
+        logger.error(f"Failed to set Telegram bot token: {str(e)}")
+        return JSONResponse(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            content={
+                "success": False,
+                "message": f"Failed to set Telegram bot token: {str(e)}",
+            },
+        )
+
+
+@router.get("/tgbot", description="Get Telegram bot token")
+async def get_tgbot_token(
+    db: Session = Depends(get_db), admin: dict = Depends(get_current_superadmin)
+):
+    """Get the current Telegram bot token and admin ID"""
+    try:
+        bot = crud.get_tgbot(db)
+        if not bot:
+            return JSONResponse(
+                status_code=status.HTTP_404_NOT_FOUND,
+                content={
+                    "success": False,
+                    "message": "Telegram bot token not set",
+                },
+            )
+        return ResponseModel(
+            success=True,
+            message="Telegram bot token retrieved successfully",
+            data=BotOutput(**bot.__dict__),
+        )
+    except Exception as e:
+        logger.error(f"Failed to retrieve Telegram bot token: {str(e)}")
+        return JSONResponse(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            content={
+                "success": False,
+                "message": f"Failed to retrieve Telegram bot token: {str(e)}",
+            },
+        )

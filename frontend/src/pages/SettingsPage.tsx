@@ -9,8 +9,9 @@ import {
     RotateCcw,
     Eye,
     Plus,
+    Bot,
 } from 'lucide-react'
-import { superadminAPI } from '@/lib/api'
+import { superadminAPI, botAPI } from '@/lib/api'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -38,12 +39,27 @@ interface NewsItem {
     created_at: string
 }
 
+interface BotConfig {
+    token: string
+    admin_id: number
+    is_active: boolean
+}
+
 export function SettingsPage() {
     const [logs, setLogs] = useState<string[]>([])
     const [logsLoading, setLogsLoading] = useState(false)
     const [backupLoading, setBackupLoading] = useState(false)
     const [restoreLoading, setRestoreLoading] = useState(false)
     const [showLogsModal, setShowLogsModal] = useState(false)
+
+    // Bot state
+    const [botConfig, setBotConfig] = useState<BotConfig>({
+        token: '',
+        admin_id: 0,
+        is_active: false,
+    })
+    const [botLoading, setBotLoading] = useState(false)
+    const [savingBot, setSavingBot] = useState(false)
 
     // News state
     const [news, setNews] = useState<NewsItem[]>([])
@@ -55,9 +71,59 @@ export function SettingsPage() {
     const [showNewsDialog, setShowNewsDialog] = useState(false)
     const [showAddNewsDialog, setShowAddNewsDialog] = useState(false)
 
+    // Toast state
+    const [showSuccessToast, setShowSuccessToast] = useState(false)
+
     useEffect(() => {
         fetchNews()
+        fetchBotConfig()
     }, [])
+
+    const fetchBotConfig = async () => {
+        try {
+            setBotLoading(true)
+            const config = await botAPI.getBotConfig()
+            setBotConfig({
+                token: config.token || '',
+                admin_id: Number(config.admin_id) || 0,
+                is_active: Boolean(config.is_active),
+            })
+        } catch (err: any) {
+            console.error('Failed to fetch bot config:', err)
+            alert(err?.message || 'Failed to fetch bot config')
+        } finally {
+            setBotLoading(false)
+        }
+    }
+
+    const handleBotSubmit = async (e: React.FormEvent) => {
+        e.preventDefault()
+        setSavingBot(true)
+
+        try {
+            await botAPI.updateBotConfig({
+                token: botConfig.token,
+                admin_id: Number(botConfig.admin_id),
+                is_active: botConfig.is_active,
+            })
+
+            setShowSuccessToast(true)
+            setTimeout(() => setShowSuccessToast(false), 5000)
+        } catch (err: any) {
+            console.error('Failed to update bot settings:', err)
+            alert(err?.message || 'Failed to update bot settings')
+        } finally {
+            setSavingBot(false)
+        }
+    }
+
+    const handleBotChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const { name, value } = e.target
+        setBotConfig(prev => ({
+            ...prev,
+            [name]: name === 'admin_id' ? Number(value) : value,
+        }))
+    }
 
     const fetchNews = async () => {
         try {
@@ -161,11 +227,112 @@ export function SettingsPage() {
         <div className="space-y-6 p-4 md:p-6 max-w-full overflow-x-hidden">
             <div>
                 <h1 className="text-2xl md:text-3xl font-bold tracking-tight">Settings</h1>
-                <p className="text-muted-foreground">Manage database, logs, and ...</p>
+                <p className="text-muted-foreground">Manage database, logs, bot, and news</p>
             </div>
 
-            {/* 4 Main Boxes */}
-            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-2">
+            {/* Success Toast */}
+            {showSuccessToast && (
+                <div className="fixed top-4 right-4 z-50 max-w-md rounded-lg border border-green-200 bg-green-50 p-4 shadow-lg dark:border-green-800 dark:bg-green-900/30">
+                    <div className="flex items-start gap-3">
+                        <div className="flex-1">
+                            <h3 className="font-semibold text-green-800 dark:text-green-300">
+                                ✅ Bot Settings Updated!
+                            </h3>
+                            <p className="mt-1 text-sm text-green-700 dark:text-green-400">
+                                Please restart the container with:
+                            </p>
+                            <code className="mt-2 block rounded bg-green-100 px-3 py-2 text-sm font-mono text-green-800 dark:bg-green-800/50 dark:text-green-300">
+                                whale-panel restart
+                            </code>
+                        </div>
+                        <button
+                            onClick={() => setShowSuccessToast(false)}
+                            className="text-green-600 hover:text-green-800 dark:text-green-400"
+                        >
+                            ✕
+                        </button>
+                    </div>
+                </div>
+            )}
+
+            {/* 5 Main Boxes - 2 rows (3 + 2) */}
+            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+                {/* Bot Box */}
+                <Card className="lg:col-span-1">
+                    <CardHeader>
+                        <CardTitle className="flex items-center gap-2">
+                            <Bot className="h-5 w-5 text-purple-500" />
+                            Telegram Bot
+                        </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                        <form onSubmit={handleBotSubmit} className="space-y-4">
+                            <div className="space-y-2">
+                                <label className="text-sm font-medium">Bot Token</label>
+                                <Input
+                                    name="token"
+                                    value={botConfig.token}
+                                    onChange={handleBotChange}
+                                    placeholder="Enter bot token"
+                                    required
+                                    disabled={botLoading}
+                                    className="text-sm"
+                                />
+                            </div>
+
+                            <div className="space-y-2">
+                                <label className="text-sm font-medium">Admin ID</label>
+                                <Input
+                                    name="admin_id"
+                                    type="number"
+                                    value={botConfig.admin_id}
+                                    onChange={handleBotChange}
+                                    placeholder="Enter admin ID"
+                                    required
+                                    disabled={botLoading}
+                                    className="text-sm"
+                                />
+                            </div>
+
+                            <div className="flex items-center justify-between pt-2 border-t">
+                                <div>
+                                    <span className="text-sm font-medium">Status</span>
+                                    <span className={`ml-2 inline-flex rounded-full px-2 py-0.5 text-xs font-medium ${botConfig.is_active
+                                        ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'
+                                        : 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'
+                                        }`}>
+                                        {botConfig.is_active ? 'Active' : 'Inactive'}
+                                    </span>
+                                </div>
+                                <button
+                                    type="button"
+                                    onClick={() =>
+                                        setBotConfig(prev => ({
+                                            ...prev,
+                                            is_active: !prev.is_active,
+                                        }))
+                                    }
+                                    className={`relative inline-flex items-center h-6 w-12 rounded-full transition-colors duration-300 flex-shrink-0 ${botConfig.is_active ? 'bg-green-500' : 'bg-red-500'
+                                        }`}
+                                >
+                                    <span
+                                        className={`inline-block h-5 w-5 rounded-full bg-white shadow transform transition-transform duration-300 ${botConfig.is_active ? 'translate-x-6' : 'translate-x-1'
+                                            }`}
+                                    />
+                                </button>
+                            </div>
+
+                            <Button
+                                type="submit"
+                                disabled={savingBot || botLoading}
+                                className="w-full bg-purple-600 hover:bg-purple-700 text-white"
+                            >
+                                {savingBot ? 'Saving...' : 'Save Bot Settings'}
+                            </Button>
+                        </form>
+                    </CardContent>
+                </Card>
+
                 {/* Backup Box */}
                 <Card>
                     <CardHeader>

@@ -15,7 +15,7 @@ class AdminInput(BaseModel):
     traffic: float = 0.0
     update_return_traffic: bool = False
     delete_return_traffic: bool = False
-    expiry_date: datetime | None
+    expiry_date: datetime | None = None
 
 
 class AdminUpdateInput(BaseModel):
@@ -30,7 +30,7 @@ class AdminUpdateInput(BaseModel):
     traffic: float
     update_return_traffic: bool = False
     delete_return_traffic: bool = False
-    expiry_date: datetime | None
+    expiry_date: datetime | None = None
 
 
 class PanelInput(BaseModel):
@@ -69,3 +69,9 @@ class NewsInput(BaseModel):
     news: str = Field(
         max_length=250, description="News content must be 250 characters or less"
     )
+
+
+class TGBotInput(BaseModel):
+    token: str
+    admin_id: int
+    is_active: bool = True
