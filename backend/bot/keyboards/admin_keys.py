@@ -41,6 +41,11 @@ def settings_menu():
                     text="🔄 تنظیم پیام راهنما", callback_data="admin:set_help_message"
                 )
             ],
+            [
+                InlineKeyboardButton(
+                    text="💬 ارسال پیام همگانی", callback_data="admin:send_broadcast"
+                )
+            ],
         ]
     )
     return keyboard

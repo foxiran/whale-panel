@@ -31,6 +31,10 @@ class RegisterAdminState(StatesGroup):
     password = State()
 
 
+class SendBroadcast(StatesGroup):
+    message = State()
+
+
 @r.callback_query(F.data == "admin:cancel")
 async def cancel(callback: CallbackQuery, state: FSMContext):
     await callback.message.delete()
@@ -346,3 +350,50 @@ async def reject_buy(callback: CallbackQuery):
     await callback.message.edit_reply_markup()
 
     await callback.answer("رد شد.")
+
+
+@r.callback_query(F.data == "admin:send_broadcast")
+async def set_broadcast(callback: CallbackQuery, state: FSMContext):
+    await callback.message.answer(
+        text="📢 پیام خود را وارد کنید، دقت کنید پیام بلافاصله پس از ارسال درصف ارسال همگانی قرار خواهد گرفت:",
+        reply_markup=cancel_button(),
+    )
+    await state.set_state(SendBroadcast.message)
+
+
+@r.message(SendBroadcast.message)
+async def send_broadcast(message: Message, state: FSMContext):
+    import asyncio
+
+    db = sessionLocal()
+    broadcast_text = message.text
+
+    if not broadcast_text:
+        await message.reply("❌ پیام نمی‌تواند خالی باشد. دوباره وارد کنید:")
+        return
+
+    users = crud.get_all_users_from_bot(db)
+
+    if not users:
+        await message.reply("⚠️ هیچ کاربری یافت نشد.")
+        await state.finish()
+        return
+
+    success = 0
+    fail = 0
+
+    await message.reply("⏳ در حال ارسال پیام همگانی...")
+
+    for user in users:
+        try:
+            await message.bot.send_message(user.chat_id, broadcast_text)
+            success += 1
+            await asyncio.sleep(0.05)
+        except:
+            fail += 1
+
+    await message.reply(
+        f"✅ ارسال کامل شد!\n" f"📤 موفق: {success}\n" f"❌ ناموفق: {fail}"
+    )
+
+    await state.finish()

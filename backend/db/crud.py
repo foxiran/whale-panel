@@ -278,6 +278,13 @@ def change_setting_request_price(db: Session, price: int) -> bool:
     return False
 
 
+def get_all_users_from_bot(db: Session):
+    try:
+        return db.query(Users).all()
+    except:
+        return None
+
+
 def get_user(db: Session, chat_id: int) -> Users | None:
     return db.query(Users).filter(Users.chat_id == chat_id).first()
 
