@@ -71,6 +71,7 @@ configure_env() {
     sed -i "s/^PORT=.*/PORT=$PANEL_PORT/" .env
     sed -i "s/^URLPATH=.*/URLPATH=$URL_PATH/" .env
     sed -i "s/^JWT_SECRET_KEY=.*/JWT_SECRET_KEY=\"$JWT_SECRET\"/" .env
+    sed -i "s/^PANEL_ADDRESS=.*/http://127.0.0.1:$PANEL_PORT/$URL_PATH/login/" .env
 
     print_success "Configuration saved"
 }
@@ -100,6 +101,7 @@ show_info() {
     echo ""
     echo "  Commands:"
     echo "    whale-panel update"
+    echo "    whale-panel edit-env"  
     echo "    whale-panel stop"
     echo "    whale-panel start"
     echo "    whale-panel logs"
